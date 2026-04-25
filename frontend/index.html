@@ -480,12 +480,14 @@
         <!-- App Section -->
         <div class="app-section" id="appSection" style="display: none;">
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('tasks')">📋 Tasks</button>
-                <button class="tab-btn" onclick="switchTab('timetable')">📅 Timetable</button>
-                <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
-            </div>
-
-            <div class="content">
+                
+               
+    <button class="tab-btn active" onclick="switchTab('tasks')">📋 Tasks</button>
+    <button class="tab-btn" onclick="switchTab('timetable')">📅 Schedule</button>
+    <button class="tab-btn" onclick="switchTab('schedule')">📆 Weekly Calendar</button>
+    <button class="tab-btn" onclick="switchTab('chat')">💬 Messages</button>
+</div>
+ <div class="content">
                 <!-- Tasks Tab -->
                 <div id="tasksTab" class="tab-content active">
                     <div class="card">
@@ -494,6 +496,10 @@
                             <label>Title</label>
                             <input type="text" id="taskTitle" placeholder="Task title">
                         </div>
+
+
+
+
                         <div class="form-group">
                             <label>Description</label>
                             <textarea id="taskDesc" placeholder="Task description" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); resize: vertical; min-height: 80px;"></textarea>
@@ -521,6 +527,8 @@
                     </div>
                 </div>
 
+
+            
                 <!-- Timetable Tab -->
                 <div id="timetableTab" class="tab-content">
                     <div class="card">
@@ -549,8 +557,28 @@
     <div id="slotsList"></div>
 </div>
                 </div>
-
-                <!-- Chat Tab -->
+                
+<!-- Weekly Schedule Tab -->
+<div id="scheduleTab" class="tab-content">
+    <div class="card" style="grid-column: 1 / -1; padding: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h3>Weekly Calendar</h3>
+                <div class="card-subtitle">All tasks & events this week</div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-secondary" onclick="previousWeek()" style="padding: 10px 15px;">← Previous</button>
+                <button class="btn-secondary" onclick="currentWeek()" style="padding: 10px 15px;">Today</button>
+                <button class="btn-secondary" onclick="nextWeek()" style="padding: 10px 15px;">Next →</button>
+            </div>
+        </div>
+        
+        <div id="weekDisplay" style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; text-align: center;"></div>
+        
+        <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px;"></div>
+    </div>
+</div>
+              <!-- Chat Tab -->
                 <div id="chatTab" class="tab-content">
                     <div class="card">
                         <h3>Group Chat</h3>
@@ -564,6 +592,8 @@
             </div>
         </div>
     </div>
+           
+              
 
     <script>
         let token = '';
@@ -987,25 +1017,151 @@ document.addEventListener('DOMContentLoaded', function() {
     box.scrollTop = box.scrollHeight;
 }
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(tab + 'Tab').classList.add('active');
-            event.target.classList.add('active');
+      function switchTab(tab) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    // Show selected tab
+    const tabElement = document.getElementById(tab + 'Tab');
+    if (tabElement) {
+        tabElement.classList.add('active');
+    }
+    
+    // Highlight active button
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 
-            // Update content layout for chat
-            const content = document.querySelector('.content');
-            if (tab === 'chat') {
-                content.classList.add('full');
-            } else {
-                content.classList.remove('full');
-            }
+    // Adjust layout based on tab
+    const content = document.querySelector('.content');
+    if (content) {
+        if (tab === 'chat') {
+            content.classList.add('full');
+        } else {
+            content.classList.remove('full');
         }
+    }
+    
+    // Load data for specific tabs
+    if (tab === 'schedule') {
+        loadWeeklyCalendar();
+    } else if (tab === 'tasks') {
+        loadTasks();
+    } else if (tab === 'timetable') {
+        loadSlots();
+    } else if (tab === 'chat') {
+        loadChatMessages();
+    }
+}
         function clearChat() {
     if (confirm('Clear all messages? This action cannot be undone.')) {
         document.getElementById('messagesBox').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><p>Chat cleared</p></div>';
     }
+}
+let currentWeekStart = new Date();
+currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
+
+function getWeekDays(startDate) {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        days.push(date);
+    }
+    return days;
+}
+
+function formatDate(date) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function getDayName(date) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+function loadWeeklyCalendar() {
+    const weekDays = getWeekDays(currentWeekStart);
+    
+    const weekStart = formatDate(weekDays[0]);
+    const weekEnd = formatDate(weekDays[6]);
+    document.getElementById('weekDisplay').textContent = `Week of ${weekStart} - ${weekEnd}`;
+    
+    Promise.all([
+        fetch(`${API_URLS.tasks}/tasks`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${API_URLS.timetable}/timetable`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
+    ])
+    .then(([tasks, events]) => {
+        const dayMap = { Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3, Friday: 4, Saturday: 5, Sunday: 6 };
+        
+        let calendarHTML = '';
+        
+        weekDays.forEach((date, index) => {
+            const dayName = getDayName(date);
+            const dateStr = formatDate(date);
+            const isToday = new Date().toDateString() === date.toDateString();
+            
+            const dayEvents = events.filter(e => {
+                const eventDayIndex = dayMap[e.day] || -1;
+                return eventDayIndex === index;
+            });
+            
+            const dayTasks = tasks.filter(t => {
+                if (!t.deadline) return false;
+                const taskDate = new Date(t.deadline);
+                return taskDate.toDateString() === date.toDateString();
+            });
+            
+            const bgColor = isToday ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.05)';
+            const borderColor = isToday ? 'var(--primary)' : 'var(--border)';
+            
+            calendarHTML += `
+                <div style="background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 12px; padding: 15px; min-height: 250px;">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px; font-size: 14px;">
+                        ${dayName} ${isToday ? '🔴' : ''}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 15px;">${dateStr}</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${dayTasks.length > 0 ? dayTasks.map(task => `
+                            <div style="background: rgba(99, 102, 241, 0.1); border-left: 3px solid var(--primary); padding: 8px; border-radius: 4px; font-size: 12px;">
+                                <div style="font-weight: 600; color: var(--text-primary);">${task.title}</div>
+                                <div style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">📋 Task</div>
+                            </div>
+                        `).join('') : ''}
+                        
+                        ${dayEvents.length > 0 ? dayEvents.map(event => `
+                            <div style="background: rgba(236, 72, 153, 0.1); border-left: 3px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 12px;">
+                                <div style="font-weight: 600; color: var(--text-primary);">${event.title}</div>
+                                <div style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">🕐 ${event.startTime || '—'}</div>
+                            </div>
+                        `).join('') : ''}
+                        
+                        ${dayTasks.length === 0 && dayEvents.length === 0 ? '<div style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 20px 0;">No events</div>' : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        document.getElementById('calendarGrid').innerHTML = calendarHTML;
+    })
+    .catch(e => console.log('Calendar error:', e));
+}
+
+function previousWeek() {
+    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+    loadWeeklyCalendar();
+}
+
+function nextWeek() {
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    loadWeeklyCalendar();
+}
+
+function currentWeek() {
+    currentWeekStart = new Date();
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
+    loadWeeklyCalendar();
 }
     </script>
 </body>
