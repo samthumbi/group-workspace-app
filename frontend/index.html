@@ -3,126 +3,564 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Group Workspace</title>
+    <title>Group Workspace - Team Collaboration</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { background: #333; color: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; }
-        h1 { margin-bottom: 10px; }
-        .auth-section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; }
-        .form-group { margin-bottom: 10px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 14px; }
-        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px; }
-        button:hover { background: #0056b3; }
-        .hidden { display: none; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { padding: 10px 20px; background: #ddd; cursor: pointer; border: none; border-radius: 3px; }
-        .tab-btn.active { background: #007bff; color: white; }
-        .tab-content { background: white; padding: 20px; border-radius: 5px; }
-        .task-item, .slot-item, .message-item { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-left: 4px solid #007bff; border-radius: 3px; }
-        .task-item button, .slot-item button { background: #dc3545; padding: 5px 10px; font-size: 12px; }
-        .message-box { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: white; border-radius: 3px; }
-        .message { margin-bottom: 10px; padding: 8px; background: #e3f2fd; border-radius: 3px; }
-        .message strong { color: #007bff; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg-dark: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --accent: #ec4899;
+            --accent-light: #f472b6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f35 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-light);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 20px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .user-badge {
+            background: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        /* Main Layout */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Auth Section */
+        .auth-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 50px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-card h2 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-family: 'Sora', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* App Section */
+        .app-section {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 30px;
+        }
+
+        .content.full {
+            grid-template-columns: 1fr;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: contents;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.15);
+        }
+
+        .card h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Task Items */
+        .task-item, .slot-item, .message-item {
+            background: rgba(99, 102, 241, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateX(5px);
+        }
+
+        .task-item strong {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .task-item p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 5px 0;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .task-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+            flex: none;
+        }
+
+        .btn-done {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Chat Box */
+        .message-box {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .message {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message strong {
+            color: var(--primary-light);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* Status Badge */
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .status.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card, .task-item, .message {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .tabs {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <header>
-            <h1>📋 Group Workspace</h1>
-            <p>Collaborate with your team — Tasks, Timetable & Chat</p>
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span>Group Workspace</span>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span id="userName"></span>
+                <span class="user-badge" id="groupCode"></span>
+            </div>
         </header>
 
         <!-- Auth Section -->
         <div class="auth-section" id="authSection">
-            <h2>Login / Register</h2>
-            <div class="form-group">
-                <label>Name:</label>
-                <input type="text" id="name" placeholder="Your name">
+            <div class="auth-card">
+                <h2>Welcome</h2>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="name" placeholder="Your name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label>Group Code</label>
+                    <input type="text" id="groupCode" placeholder="e.g., GROUP123">
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="register()">Register</button>
+                    <button class="btn-secondary" onclick="login()">Login</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Email:</label>
-                <input type="email" id="email" placeholder="your@email.com">
-            </div>
-            <div class="form-group">
-                <label>Password:</label>
-                <input type="password" id="password" placeholder="Password">
-            </div>
-            <div class="form-group">
-                <label>Group Code:</label>
-                <input type="text" id="groupCode" placeholder="e.g., GROUP123">
-            </div>
-            <button onclick="register()">Register</button>
-            <button onclick="login()">Login</button>
         </div>
 
-        <!-- Main App Section -->
-        <div id="appSection" class="hidden">
-            <p id="userInfo" style="background: #d4edda; padding: 10px; border-radius: 3px; margin-bottom: 20px;"></p>
-            
+        <!-- App Section -->
+        <div class="app-section" id="appSection" style="display: none;">
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('tasks')">Tasks</button>
-                <button class="tab-btn" onclick="switchTab('timetable')">Timetable</button>
-                <button class="tab-btn" onclick="switchTab('chat')">Chat</button>
+                <button class="tab-btn active" onclick="switchTab('tasks')">📋 Tasks</button>
+                <button class="tab-btn" onclick="switchTab('timetable')">📅 Timetable</button>
+                <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
             </div>
 
-            <!-- Tasks Tab -->
-            <div id="tasksTab" class="tab-content">
-                <h2>Tasks</h2>
-                <div class="form-group">
-                    <label>Task Title:</label>
-                    <input type="text" id="taskTitle" placeholder="Task title">
+            <div class="content">
+                <!-- Tasks Tab -->
+                <div id="tasksTab" class="tab-content active">
+                    <div class="card">
+                        <h3>Create Task</h3>
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="taskTitle" placeholder="Task title">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="taskDesc" placeholder="Task description" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); resize: vertical; min-height: 80px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Assign To</label>
+                            <input type="text" id="taskAssign" placeholder="Team member">
+                        </div>
+                        <div class="form-group"><div class="form-group">
+    <label>Priority</label>
+    <select id="taskPriority" style="width: 100%; padding: 12px 14px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; font-family: 'Space Grotesk', sans-serif;">
+        <option value="low">🟢 Low</option>
+        <option value="medium" selected>🟡 Medium</option>
+        <option value="high">🔴 High</option>
+    </select>
+</div>
+                            <label>Deadline</label>
+                            <input type="date" id="taskDeadline">
+                        </div>
+                        <button class="btn-primary" onclick="createTask()" style="width: 100%;">Add Task</button>
+                    </div>
+                    <div class="card">
+                        <h3>Active Tasks</h3><div class="card-subtitle" id="taskCount">0 tasks</div>
+                        <div id="tasksList"></div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Description:</label>
-                    <textarea id="taskDesc" placeholder="Task description" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Assign To:</label>
-                    <input type="text" id="taskAssign" placeholder="Team member name">
-                </div>
-                <div class="form-group">
-                    <label>Deadline:</label>
-                    <input type="date" id="taskDeadline">
-                </div>
-                <button onclick="createTask()">Add Task</button>
-                <div id="tasksList" style="margin-top: 20px;"></div>
-            </div>
 
-            <!-- Timetable Tab -->
-            <div id="timetableTab" class="tab-content hidden">
-                <h2>Timetable</h2>
-                <div class="form-group">
-                    <label>Event Title:</label>
-                    <input type="text" id="slotTitle" placeholder="Event title">
+                <!-- Timetable Tab -->
+                <div id="timetableTab" class="tab-content">
+                    <div class="card">
+                        <h3>Schedule Event</h3>
+                        <div class="form-group">
+                            <label>Event Title</label>
+                            <input type="text" id="slotTitle" placeholder="Event name">
+                        </div>
+                        <div class="form-group">
+                            <label>Day</label>
+                            <input type="text" id="slotDay" placeholder="Monday">
+                        </div>
+                        <div class="form-group">
+    <label>Start Time</label>
+    <input type="time" id="slotStart" placeholder="10:00">
+</div>
+<div class="form-group">
+    <label>End Time</label>
+    <input type="time" id="slotEnd" placeholder="15:00">
+</div>
+                        <button class="btn-primary" onclick="createSlot()" style="width: 100%;">Add to Schedule</button>
+                    </div>
+                  <div class="card">
+    <h3>Group Schedule</h3>
+    <div class="card-subtitle" id="slotCount">0 events</div>
+    <div id="slotsList"></div>
+</div>
                 </div>
-                <div class="form-group">
-                    <label>Day:</label>
-                    <input type="text" id="slotDay" placeholder="e.g., Monday">
-                </div>
-                <div class="form-group">
-                    <label>Start Time:</label>
-                    <input type="time" id="slotStart">
-                </div>
-                <div class="form-group">
-                    <label>End Time:</label>
-                    <input type="time" id="slotEnd">
-                </div>
-                <button onclick="createSlot()">Add to Timetable</button>
-                <div id="slotsList" style="margin-top: 20px;"></div>
-            </div>
 
-            <!-- Chat Tab -->
-            <div id="chatTab" class="tab-content hidden">
-                <h2>Group Chat</h2>
-                <div class="message-box" id="messagesBox"></div>
-                <div class="form-group">
-                    <input type="text" id="messageInput" placeholder="Type a message...">
+                <!-- Chat Tab -->
+                <div id="chatTab" class="tab-content">
+                    <div class="card">
+                        <h3>Group Chat</h3>
+                        <div class="message-box" id="messagesBox"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="messageInput" placeholder="Type a message..." style="flex: 1; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                            <button class="btn-primary" onclick="sendMessage()" style="flex: 0;">Send</button>
+                        </div>
+                    </div>
                 </div>
-                <button onclick="sendMessage()">Send</button>
             </div>
         </div>
     </div>
@@ -171,9 +609,11 @@
                     token = data.token;
                     userName = data.name;
                     groupCode = data.groupCode;
-                    document.getElementById('authSection').classList.add('hidden');
-                    document.getElementById('appSection').classList.remove('hidden');
-                    document.getElementById('userInfo').textContent = `✅ Logged in as ${userName} (Group: ${groupCode})`;
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('appSection').style.display = 'flex';
+                    document.getElementById('userInfo').style.display = 'flex';
+                    document.getElementById('userName').textContent = `👤 ${userName}`;
+                    document.getElementById('groupCode').textContent = groupCode;
                     loadTasks();
                     loadSlots();
                     initChat();
@@ -185,52 +625,110 @@
         }
 
         function createTask() {
-            const title = document.getElementById('taskTitle').value;
-            const description = document.getElementById('taskDesc').value;
-            const assignedTo = document.getElementById('taskAssign').value;
-            const deadline = document.getElementById('taskDeadline').value;
+    const title = document.getElementById('taskTitle').value;
+    const description = document.getElementById('taskDesc').value;
+    const assignedTo = document.getElementById('taskAssign').value;
+    const deadline = document.getElementById('taskDeadline').value;
+    const priority = document.getElementById('taskPriority').value;
 
-            fetch(`${API_URLS.tasks}/tasks`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ title, description, assignedTo, deadline })
-            })
-            .then(r => r.json())
-            .then(data => {
-                loadTasks();
-                document.getElementById('taskTitle').value = '';
-                document.getElementById('taskDesc').value = '';
-                document.getElementById('taskAssign').value = '';
-                document.getElementById('taskDeadline').value = '';
-            })
-            .catch(e => console.log(e));
-        }
+    if (!title || !assignedTo) {
+        alert('Title and assignee required');
+        return;
+    }
 
-        function loadTasks() {
-            fetch(`${API_URLS.tasks}/tasks`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(r => r.json())
-            .then(tasks => {
-                let html = '';
-                tasks.forEach(task => {
-                    html += `
-                        <div class="task-item">
-                            <strong>${task.title}</strong> - ${task.status}
-                            <p>${task.description}</p>
-                            <p>Assigned to: ${task.assignedTo}</p>
-                            <button onclick="updateTaskStatus('${task._id}', 'completed')">Mark Done</button>
-                            <button onclick="deleteTask('${task._id}')">Delete</button>
-                        </div>
-                    `;
-                });
-                document.getElementById('tasksList').innerHTML = html || '<p>No tasks yet</p>';
-            })
-            .catch(e => console.log(e));
+    fetch(`${API_URLS.tasks}/tasks`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, description, assignedTo, deadline, priority })
+    })
+    .then(r => r.json())
+    .then(data => {
+        loadTasks();
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskAssign').value = '';
+        document.getElementById('taskDeadline').value = '';
+        document.getElementById('taskPriority').value = 'medium';
+    })
+    .catch(e => console.log(e));
+}
+       function loadTasks() {
+    fetch(`${API_URLS.tasks}/tasks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(tasks => {
+        document.getElementById('taskCount').textContent = `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+        let html = '';
+        if (tasks.length === 0) {
+            html = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No tasks yet</p></div>';
+        } else {
+            // Sort by priority: high > medium > low
+// Sort by priority (high first) then by newest first
+// Sort by status (pending first), then priority (high first), then by newest first
+const priorityOrder = { high: 0, medium: 1, low: 2 };
+tasks.sort((a, b) => {
+    // Pending tasks first, completed at bottom
+    if (a.status !== b.status) {
+        return a.status === 'pending' ? -1 : 1;
+    }
+    // Same status: sort by priority
+    const priorityDiff = (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
+    if (priorityDiff !== 0) return priorityDiff;
+    // Same priority: sort by newest first
+    return new Date(b.createdAt) - new Date(a.createdAt);
+});
+           tasks.forEach(task => {
+    const priorityColor = task.priority === 'high' ? '#ef4444' : task.priority === 'medium' ? '#f59e0b' : '#10b981';
+    const priorityIcon = task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢';
+    const createdTime = new Date(task.createdAt).toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit'
+    });
+               html += `
+    <div class="task-item" style="border-left-color: ${priorityColor}">
+        <strong>${task.title}</strong>
+        <p>${task.description || 'No description'}</p>
+        
+        <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="meta-badge">👤 ${task.assignedTo}</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="status-badge ${task.status}" style="background: ${task.status === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${task.status === 'completed' ? 'var(--success)' : 'var(--warning)'}; border: 1px solid ${task.status === 'completed' ? 'var(--success)' : 'var(--warning)'};">
+                    ${task.status === 'completed' ? '✓ Completed' : '⏳ Pending'}
+                </span>
+            </div>
+            
+            ${task.status === 'pending' ? `<div style="display: flex; align-items: center; gap: 8px;">
+                <span class="meta-badge" style="background: rgba(${task.priority === 'high' ? '239, 68, 68' : task.priority === 'medium' ? '245, 158, 11' : '16, 185, 129'}, 0.15); color: ${priorityColor}; border: 1px solid ${priorityColor};">
+                    ${priorityIcon} ${task.priority.toUpperCase()}
+                </span>
+            </div>` : ''}
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="meta-badge">🕐 ${createdTime}</span>
+            </div>
+        </div>
+        
+        <div class="task-actions">
+    ${task.status === 'pending' ? `<button class="btn-success" onclick="updateTaskStatus('${task._id}', 'completed')">✓ Done</button>` : ''}
+    <button class="btn-danger" onclick="deleteTask('${task._id}')">✕ Delete</button>
+</div>
+    </div>
+`;
+            });
         }
+        document.getElementById('tasksList').innerHTML = html;
+    })
+    .catch(e => console.log(e));
+}
 
         function updateTaskStatus(id, status) {
             fetch(`${API_URLS.tasks}/tasks/${id}`, {
@@ -255,51 +753,83 @@
         }
 
         function createSlot() {
-            const title = document.getElementById('slotTitle').value;
-            const day = document.getElementById('slotDay').value;
-            const startTime = document.getElementById('slotStart').value;
-            const endTime = document.getElementById('slotEnd').value;
+    const title = document.getElementById('slotTitle').value;
+    const day = document.getElementById('slotDay').value;
+    const startTime = document.getElementById('slotStart').value;
+    const endTime = document.getElementById('slotEnd').value;
 
-            fetch(`${API_URLS.timetable}/timetable`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ title, day, startTime, endTime })
-            })
-            .then(r => r.json())
-            .then(data => {
-                loadSlots();
-                document.getElementById('slotTitle').value = '';
-                document.getElementById('slotDay').value = '';
-                document.getElementById('slotStart').value = '';
-                document.getElementById('slotEnd').value = '';
-            })
-            .catch(e => console.log(e));
-        }
+    console.log('Form values:', { title, day, startTime, endTime });
+
+    if (!title || !day || !startTime || !endTime) {
+        alert('All fields required');
+        console.log('Missing fields!');
+        return;
+    }
+
+    fetch(`${API_URLS.timetable}/timetable`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, day, startTime, endTime })
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log('Response:', data);
+        loadSlots();
+        document.getElementById('slotTitle').value = '';
+        document.getElementById('slotDay').value = '';
+        document.getElementById('slotStart').value = '';
+        document.getElementById('slotEnd').value = '';
+    })
+    .catch(e => console.log('Error:', e));
+}
 
         function loadSlots() {
-            fetch(`${API_URLS.timetable}/timetable`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(r => r.json())
-            .then(slots => {
-                let html = '';
-                slots.forEach(slot => {
-                    html += `
-                        <div class="slot-item">
-                            <strong>${slot.title}</strong> - ${slot.day}
-                            <p>${slot.startTime} to ${slot.endTime}</p>
-                            <button onclick="deleteSlot('${slot._id}')">Delete</button>
-                        </div>
-                    `;
-                });
-                document.getElementById('slotsList').innerHTML = html || '<p>No timetable entries yet</p>';
-            })
-            .catch(e => console.log(e));
-        }
+    fetch(`${API_URLS.timetable}/timetable`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(slots => {
+        document.getElementById('slotCount').textContent = `${slots.length} event${slots.length !== 1 ? 's' : ''}`;
+        
+        // Sort by day and time
+        const dayOrder = { Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3, Friday: 4, Saturday: 5, Sunday: 6 };
+        slots.sort((a, b) => {
+            const dayDiff = (dayOrder[a.day] || 7) - (dayOrder[b.day] || 7);
+            if (dayDiff !== 0) return dayDiff;
+            return a.startTime.localeCompare(b.startTime);
+        });
+        
+        let html = '';
+        if (slots.length === 0) {
+            html = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No scheduled events</p></div>';
+        } else {
+            slots.forEach(slot => {
+          const startTime = slot.startTime && slot.startTime.trim() ? slot.startTime : '—';
+const endTime = slot.endTime && slot.endTime.trim() ? slot.endTime : '—';
 
+html += `
+    <div class="slot-item">
+        <strong>${slot.title}</strong>
+        <div class="task-meta" style="margin-top: 10px;">
+            <span class="meta-badge">📅 ${slot.day}</span>
+        </div>
+        <div class="task-meta" style="margin-top: 8px;">
+            <span class="meta-badge">🕐 ${startTime} - ${endTime}</span>
+        </div>
+        <div class="task-actions">
+            <button class="btn-danger" onclick="deleteSlot('${slot._id}')" style="flex: 1;">✕ Delete</button>
+        </div>
+    </div>
+`;
+            });
+        }
+        document.getElementById('slotsList').innerHTML = html;
+    })
+    .catch(e => console.log(e));
+}
         function deleteSlot(id) {
             fetch(`${API_URLS.timetable}/timetable/${id}`, {
                 method: 'DELETE',
@@ -309,61 +839,174 @@
             .catch(e => console.log(e));
         }
 
-        function initChat() {
-            socket = io(API_URLS.chat);
-            socket.emit('join', groupCode);
-            
-            socket.on('receive_message', (message) => {
-                displayMessage(message.sender, message.content);
-            });
+     function initChat() {
+    if (socket) {
+        socket.disconnect();
+    }
+    
+    socket = io('http://localhost:3004', {
+        transports: ['websocket', 'polling']
+    });
 
-            loadChatMessages();
-        }
+    socket.on('connect', () => {
+        console.log('✓ Connected to chat');
+        socket.emit('join', { name: userName, groupCode: groupCode });
+    });
 
-        function sendMessage() {
-            const content = document.getElementById('messageInput').value;
-            if (!content) return;
-            
-            socket.emit('send_message', {
-                sender: userName,
-                content: content,
-                groupCode: groupCode
-            });
-            document.getElementById('messageInput').value = '';
-        }
+    socket.on('receive_message', (message) => {
+        console.log('📨 Received:', message);
+        displayMessage(message.sender, message.content);
+    });
 
+    socket.on('user_joined', (data) => {
+        console.log(data.name, 'joined. Total users:', data.total);
+    });
+
+    socket.on('error', (error) => {
+        console.error('Error:', error);
+    });
+
+    loadChatMessages();
+}
+     function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    
+    console.log('Send button clicked');
+    console.log('Socket connected?', socket && socket.connected);
+    console.log('Message content:', content);
+    console.log('User name:', userName);
+    
+    if (!content) {
+        console.log('No content, returning');
+        return;
+    }
+    
+    if (!socket || !socket.connected) {
+        console.error('Socket not connected!');
+        alert('Chat not connected');
+        return;
+    }
+    
+    console.log('Emitting send_message event');
+    socket.emit('send_message', {
+        sender: userName,
+        content: content,
+        groupCode: groupCode
+    });
+    
+    console.log('Message emitted');
+    input.value = '';
+    input.focus();
+}
+        function clearChat() {
+    if (confirm('Clear all messages? This action cannot be undone.')) {
+        document.getElementById('messagesBox').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><p>Chat cleared</p></div>';
+    }
+}
+
+// Add message count to header
+function updateChatBadge() {
+    const messagesBox = document.getElementById('messagesBox');
+    if (messagesBox) {
+        const messageCount = messagesBox.querySelectorAll('.message').length;
+        // You can display this count somewhere if needed
+    }
+}
+
+// Add Enter key support
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+});
         function loadChatMessages() {
-            fetch(`${API_URLS.chat}/chat/messages`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(r => r.json())
-            .then(messages => {
-                let html = '';
-                messages.forEach(msg => {
-                    html += `<div class="message"><strong>${msg.sender}:</strong> ${msg.content}</div>`;
+    fetch(`${API_URLS.chat}/chat/messages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(messages => {
+        let html = '';
+        if (messages.length === 0) {
+            html = '<div class="empty-state"><div class="empty-state-icon">💬</div><p>No messages yet. Start the conversation!</p></div>';
+        } else {
+            messages.forEach(msg => {
+                const isCurrentUser = msg.sender === userName;
+                const timestamp = new Date(msg.timestamp).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
                 });
-                document.getElementById('messagesBox').innerHTML = html;
-                document.getElementById('messagesBox').scrollTop = document.getElementById('messagesBox').scrollHeight;
-            })
-            .catch(e => console.log(e));
+                const borderColor = isCurrentUser ? 'var(--success)' : 'var(--primary)';
+                const bgColor = isCurrentUser ? 'rgba(16, 185, 129, 0.1)' : 'rgba(99, 102, 241, 0.08)';
+                html += `
+                    <div class="message" style="border-left-color: ${borderColor}; background: ${bgColor};">
+                        <strong>${msg.sender}</strong>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 3px;">${timestamp}</div>
+                        <div style="margin-top: 5px;">${msg.content}</div>
+                    </div>
+                `;
+            });
         }
+        document.getElementById('messagesBox').innerHTML = html;
+        document.getElementById('messagesBox').scrollTop = document.getElementById('messagesBox').scrollHeight;
+    })
+    .catch(e => console.log('Chat load error:', e));
+}
 
         function displayMessage(sender, content) {
-            const box = document.getElementById('messagesBox');
-            const msg = document.createElement('div');
-            msg.className = 'message';
-            msg.innerHTML = `<strong>${sender}:</strong> ${content}`;
-            box.appendChild(msg);
-            box.scrollTop = box.scrollHeight;
-        }
+    const box = document.getElementById('messagesBox');
+    
+    // Remove empty state if exists
+    const emptyState = box.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const msg = document.createElement('div');
+    msg.className = 'message';
+    
+    const isCurrentUser = sender === userName;
+    if (isCurrentUser) {
+        msg.style.borderLeftColor = '#10b981';
+        msg.style.background = 'rgba(16, 185, 129, 0.1)';
+    }
+    
+    const timestamp = new Date().toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    msg.innerHTML = `<strong>${sender}</strong><div style="font-size: 11px; color: var(--text-secondary); margin-top: 3px;">${timestamp}</div><div style="margin-top: 5px;">${content}</div>`;
+    box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+}
 
         function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             
-            document.getElementById(tab + 'Tab').classList.remove('hidden');
+            document.getElementById(tab + 'Tab').classList.add('active');
             event.target.classList.add('active');
+
+            // Update content layout for chat
+            const content = document.querySelector('.content');
+            if (tab === 'chat') {
+                content.classList.add('full');
+            } else {
+                content.classList.remove('full');
+            }
         }
+        function clearChat() {
+    if (confirm('Clear all messages? This action cannot be undone.')) {
+        document.getElementById('messagesBox').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><p>Chat cleared</p></div>';
+    }
+}
     </script>
 </body>
 </html>

@@ -30,6 +30,7 @@ const TaskSchema = new mongoose.Schema({
   description: String,
   assignedTo: String,
   status: { type: String, default: 'pending' },
+  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
   deadline: Date,
   groupCode: String,
   createdAt: { type: Date, default: Date.now }
@@ -44,12 +45,16 @@ app.get('/tasks', auth, async (req, res) => {
 
 // Create task
 app.post('/tasks', auth, async (req, res) => {
-  const { title, description, assignedTo, deadline } = req.body;
-  const task = await Task.create({
-    title, description, assignedTo, deadline,
-    groupCode: req.user.groupCode
-  });
-  res.json(task);
+  try {
+    const { title, description, assignedTo, deadline, priority } = req.body;
+    const task = await Task.create({
+      title, description, assignedTo, deadline, priority,
+      groupCode: req.user.groupCode
+    });
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Update task status

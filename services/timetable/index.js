@@ -40,14 +40,17 @@ app.get('/timetable', auth, async (req, res) => {
 });
 
 app.post('/timetable', auth, async (req, res) => {
-  const { title, day, startTime, endTime, description } = req.body;
-  const slot = await Slot.create({
-    title, day, startTime, endTime, description,
-    groupCode: req.user.groupCode
-  });
-  res.json(slot);
+  try {
+    const { title, day, startTime, endTime, description } = req.body;
+    const slot = await Slot.create({
+      title, day, startTime, endTime, description,
+      groupCode: req.user.groupCode
+    });
+    res.json(slot);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
-
 app.delete('/timetable/:id', auth, async (req, res) => {
   await Slot.findByIdAndDelete(req.params.id);
   res.json({ message: 'Slot deleted' });
