@@ -46,7 +46,20 @@ app.get('/chat/messages', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
+app.post('/chat/messages', async (req, res) => {
+  try {
+    const { sender, content, groupCode } = req.body;
+    const message = await Message.create({
+      sender,
+      content,
+      groupCode: groupCode || 'default',
+      timestamp: new Date()
+    });
+    res.json(message);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 // Socket.io
 const connectedUsers = {};
 
